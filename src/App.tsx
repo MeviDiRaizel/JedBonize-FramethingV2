@@ -19,16 +19,10 @@ interface DragState {
   startImageY: number
 }
 
-// Rotation helpers (top-level for stable references)
+// Degree normalization for display
 const normalizeDeg = (angle: number) => {
   const mod = angle % 360
   return mod < 0 ? mod + 360 : mod
-}
-
-const snapAngleDeg = (angle: number, threshold = 6, step = 90) => {
-  const normalized = normalizeDeg(angle)
-  const nearest = Math.round(normalized / step) * step
-  return Math.abs(normalized - nearest) <= threshold ? normalizeDeg(nearest) : normalized
 }
 
 function App() {
@@ -66,7 +60,7 @@ function App() {
   } | null>(null)
   const [showGestureHint, setShowGestureHint] = useState(false)
 
-  // (moved to top-level) Helpers for snapping rotation to nearest 90° within a threshold
+  // gesture + drag state
 
   const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'frame') => {
     const file = event.target.files?.[0]
@@ -223,8 +217,6 @@ function App() {
 
   const handleTouchEnd = useCallback(() => {
     setDragState(prev => ({ ...prev, isDragging: false }))
-    // Snap rotation only after gesture ends to avoid spinning during interaction
-    setProfileImage(prev => prev ? { ...prev, rotation: snapAngleDeg(prev.rotation) } : prev)
     setGestureState(null)
   }, [])
 
@@ -241,7 +233,7 @@ function App() {
     if (!profileImage) return
     setProfileImage(prev => prev ? {
       ...prev,
-      rotation: snapAngleDeg(rotation)
+      rotation: rotation
     } : null)
   }, [profileImage])
 
@@ -770,19 +762,24 @@ function App() {
               {/* Mobile download button bar */}
               {profileImage && (
                 <div className="mobile-download-bar">
-                  <button
-                    className="back-btn mobile"
-                    onClick={(e) => { e.stopPropagation(); handleBackMobile() }}
-                  >
-                    <ArrowLeft size={16} /> Back
-                  </button>
-                  <button
-                    className="download-btn mobile"
-                    onClick={(e) => { e.stopPropagation(); handleDownload() }}
-                    disabled={!profileImage || !frameImage}
-                  >
-                    <Download size={16} /> Download
-                  </button>
+                  <div className={`degree-indicator ${normalizeDeg(profileImage.rotation) === 0 ? 'ok' : ''}`}>
+                    {Math.round(normalizeDeg(profileImage.rotation))}°
+                  </div>
+                  <div className="mobile-buttons-row">
+                    <button
+                      className="back-btn mobile"
+                      onClick={(e) => { e.stopPropagation(); handleBackMobile() }}
+                    >
+                      <ArrowLeft size={16} /> Back
+                    </button>
+                    <button
+                      className="download-btn mobile"
+                      onClick={(e) => { e.stopPropagation(); handleDownload() }}
+                      disabled={!profileImage || !frameImage}
+                    >
+                      <Download size={16} /> Download
+                    </button>
+                  </div>
                 </div>
               )}
               {profileImage && showGestureHint && (
