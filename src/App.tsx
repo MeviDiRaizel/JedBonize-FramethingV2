@@ -193,7 +193,6 @@ function App() {
       const nextScale = Math.max(0.1, Math.min(3, gestureState.startScale * scaleFactor))
       const rotationDeltaDeg = ((angle - gestureState.startAngle) * 180) / Math.PI
       const nextRotation = gestureState.startRotation + rotationDeltaDeg
-      const snappedRotation = snapAngleDeg(nextRotation)
 
       const deltaCenterX = center.x - gestureState.startCenterX
       const deltaCenterY = center.y - gestureState.startCenterY
@@ -201,7 +200,7 @@ function App() {
       setProfileImage(prev => prev ? {
         ...prev,
         scale: nextScale,
-        rotation: snappedRotation,
+        rotation: nextRotation,
         x: gestureState.startImageX + deltaCenterX,
         y: gestureState.startImageY + deltaCenterY
       } : null)
@@ -224,6 +223,8 @@ function App() {
 
   const handleTouchEnd = useCallback(() => {
     setDragState(prev => ({ ...prev, isDragging: false }))
+    // Snap rotation only after gesture ends to avoid spinning during interaction
+    setProfileImage(prev => prev ? { ...prev, rotation: snapAngleDeg(prev.rotation) } : prev)
     setGestureState(null)
   }, [])
 

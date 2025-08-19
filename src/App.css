@@ -414,7 +414,8 @@ body {
   object-fit: cover;
   border-radius: 0.5rem;
   box-shadow: var(--shadow-lg);
-  transition: transform 0.1s ease;
+  /* remove transform transition to avoid spin animation while snapping */
+  transition: none;
   pointer-events: auto;
   display: block;
 }
