@@ -267,8 +267,8 @@ function App() {
       return
     }
 
-    // Try left (preferred), then right, then top, then bottom
-    if (spaceLeft >= desiredWidth) {
+    // Prioritize left side - even if space is tight, try to fit it there
+    if (spaceLeft > 0) {
       const top = clamp(
         frameRect.top - containerRect.top + frameRect.height / 2 - desiredHeight / 2,
         margin,
@@ -277,7 +277,9 @@ function App() {
       setControlsStyle({ position: 'absolute', top, left: margin })
       return
     }
-    if (spaceRight >= desiredWidth) {
+    
+    // If no space on left, try right side
+    if (spaceRight > 0) {
       const top = clamp(
         frameRect.top - containerRect.top + frameRect.height / 2 - desiredHeight / 2,
         margin,
@@ -287,6 +289,8 @@ function App() {
       setControlsStyle({ position: 'absolute', top, left })
       return
     }
+    
+    // If no space on sides, try top
     if (spaceTop >= desiredHeight) {
       const left = clamp(
         frameRect.left - containerRect.left + frameRect.width / 2 - desiredWidth / 2,
@@ -296,13 +300,18 @@ function App() {
       setControlsStyle({ position: 'absolute', top: margin, left })
       return
     }
-    // Default to bottom
+    
+    // Last resort: bottom, but ensure it doesn't go out of bounds
     const left = clamp(
       frameRect.left - containerRect.left + frameRect.width / 2 - desiredWidth / 2,
       margin,
       containerRect.width - desiredWidth - margin
     )
-    const top = frameRect.bottom - containerRect.top + margin
+    const top = clamp(
+      frameRect.bottom - containerRect.top + margin,
+      margin,
+      containerRect.height - desiredHeight - margin
+    )
     setControlsStyle({ position: 'absolute', top, left })
   }, [controlsUserPos])
 
