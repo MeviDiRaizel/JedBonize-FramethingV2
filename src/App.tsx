@@ -22,7 +22,7 @@ interface DragState {
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [profileImage, setProfileImage] = useState<ImageState | null>(null)
-  const [frameImage, setFrameImage] = useState<string | null>('./frames/DP.png')
+  const [frameImage, setFrameImage] = useState<string | null>('/JedBonize-FramethingV2/frames/DP.png')
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
     startX: 0,
@@ -383,7 +383,7 @@ function App() {
 
   const clearAll = useCallback(() => {
     setProfileImage(null)
-    setFrameImage('./frames/DP.png')
+    setFrameImage('/JedBonize-FramethingV2/frames/DP.png')
     if (fileInputRef.current) fileInputRef.current.value = ''
     toast.success('All images cleared!')
   }, [])
@@ -458,7 +458,7 @@ function App() {
       <header className="header">
         <div className="header-content">
           <div className="header-brand">
-            <img className="site-logo" src="./icons/CCISLOGO.png" alt="Site logo" />
+            <img className="site-logo" src="/JedBonize-FramethingV2/icons/CCISLOGO.png" alt="Site logo" />
             <h1 className="title title-badge">
               <span className="gradient-text">Jed</span>Bonize
             </h1>
@@ -665,7 +665,7 @@ function App() {
             rel="noopener noreferrer"
             aria-label="Jed (MeviDiRaizel) on GitHub"
           >
-            <img className="profile-avatar" src="./icons/mevidiraizel.jpg" alt="Jed avatar" />
+            <img className="profile-avatar" src="/JedBonize-FramethingV2/icons/mevidiraizel.jpg" alt="Jed avatar" />
             <div className="profile-meta">
               <div className="profile-name">Jed (MeviDiRaizel)</div>
               <div className="profile-url">github.com/MeviDiRaizel</div>
