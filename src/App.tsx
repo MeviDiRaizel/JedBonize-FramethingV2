@@ -41,6 +41,18 @@ function App() {
   const [controlsUserPos, setControlsUserPos] = useState<{ top: number; left: number } | null>(null)
   const [isDraggingControls, setIsDraggingControls] = useState(false)
   const controlsDragStartRef = useRef<{ startX: number; startY: number; startTop: number; startLeft: number }>({ startX: 0, startY: 0, startTop: 0, startLeft: 0 })
+  const [gestureState, setGestureState] = useState<{
+    isPinching: boolean
+    startDistance: number
+    startAngle: number
+    startScale: number
+    startRotation: number
+    startCenterX: number
+    startCenterY: number
+    startImageX: number
+    startImageY: number
+  } | null>(null)
+  const [showGestureHint, setShowGestureHint] = useState(false)
 
   const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'frame') => {
     const file = event.target.files?.[0]
@@ -116,7 +128,29 @@ function App() {
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!profileImage) return
     e.preventDefault()
-    
+    if (e.touches.length === 2) {
+      const [t1, t2] = [e.touches[0], e.touches[1]]
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY)
+      const angle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX)
+      const centerClientX = (t1.clientX + t2.clientX) / 2
+      const centerClientY = (t1.clientY + t2.clientY) / 2
+      const center = getCanvasPosition(centerClientX, centerClientY)
+      setGestureState({
+        isPinching: true,
+        startDistance: dist,
+        startAngle: angle,
+        startScale: profileImage.scale,
+        startRotation: profileImage.rotation,
+        startCenterX: center.x,
+        startCenterY: center.y,
+        startImageX: profileImage.x,
+        startImageY: profileImage.y
+      })
+      // Ensure normal drag is disabled while pinching
+      setDragState(prev => ({ ...prev, isDragging: false }))
+      return
+    }
+
     const touch = e.touches[0]
     const pos = getCanvasPosition(touch.clientX, touch.clientY)
     setDragState({
@@ -129,23 +163,53 @@ function App() {
   }, [profileImage, getCanvasPosition])
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!dragState.isDragging || !profileImage) return
+    if (!profileImage) return
     e.preventDefault()
-    
-    const touch = e.touches[0]
-    const pos = getCanvasPosition(touch.clientX, touch.clientY)
-    const deltaX = pos.x - dragState.startX
-    const deltaY = pos.y - dragState.startY
-    
-    setProfileImage(prev => prev ? {
-      ...prev,
-      x: dragState.startImageX + deltaX,
-      y: dragState.startImageY + deltaY
-    } : null)
-  }, [dragState, profileImage, getCanvasPosition])
+
+    // Two-finger gestures: pinch zoom + rotate + translate following center
+    if (gestureState?.isPinching && e.touches.length === 2) {
+      const [t1, t2] = [e.touches[0], e.touches[1]]
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY)
+      const angle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX)
+      const centerClientX = (t1.clientX + t2.clientX) / 2
+      const centerClientY = (t1.clientY + t2.clientY) / 2
+      const center = getCanvasPosition(centerClientX, centerClientY)
+
+      const scaleFactor = dist / gestureState.startDistance
+      const nextScale = Math.max(0.1, Math.min(3, gestureState.startScale * scaleFactor))
+      const rotationDeltaDeg = ((angle - gestureState.startAngle) * 180) / Math.PI
+      const nextRotation = gestureState.startRotation + rotationDeltaDeg
+
+      const deltaCenterX = center.x - gestureState.startCenterX
+      const deltaCenterY = center.y - gestureState.startCenterY
+
+      setProfileImage(prev => prev ? {
+        ...prev,
+        scale: nextScale,
+        rotation: nextRotation,
+        x: gestureState.startImageX + deltaCenterX,
+        y: gestureState.startImageY + deltaCenterY
+      } : null)
+      return
+    }
+
+    // One-finger drag
+    if (dragState.isDragging) {
+      const touch = e.touches[0]
+      const pos = getCanvasPosition(touch.clientX, touch.clientY)
+      const deltaX = pos.x - dragState.startX
+      const deltaY = pos.y - dragState.startY
+      setProfileImage(prev => prev ? {
+        ...prev,
+        x: dragState.startImageX + deltaX,
+        y: dragState.startImageY + deltaY
+      } : null)
+    }
+  }, [dragState, profileImage, gestureState, getCanvasPosition])
 
   const handleTouchEnd = useCallback(() => {
     setDragState(prev => ({ ...prev, isDragging: false }))
+    setGestureState(null)
   }, [])
 
   const handleRotate = useCallback(() => {
@@ -450,8 +514,27 @@ function App() {
     }
   }, [])
 
+  // Show gesture hint on mobile after selecting image
+  useEffect(() => {
+    if (!profileImage) return
+    const isMobile = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 768px)').matches
+    if (!isMobile) return
+    const dismissed = typeof window !== 'undefined' && localStorage.getItem('gestureHintDismissed') === '1'
+    if (dismissed) return
+    setShowGestureHint(true)
+    const timer = window.setTimeout(() => setShowGestureHint(false), 5000)
+    return () => window.clearTimeout(timer)
+  }, [profileImage])
+
+  const dismissGestureHint = useCallback((persist: boolean) => {
+    setShowGestureHint(false)
+    if (persist && typeof window !== 'undefined') {
+      localStorage.setItem('gestureHintDismissed', '1')
+    }
+  }, [])
+
   return (
-    <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
+    <div className={`app ${isDarkMode ? 'dark' : 'light'}`} data-has-image={!!profileImage}>
       <Toaster 
         position="top-right"
         toastOptions={{
@@ -659,6 +742,22 @@ function App() {
                 <div className="drag-indicator">
                   <Move size={20} />
                   <span>Drag to move</span>
+                </div>
+              )}
+              {profileImage && showGestureHint && (
+                <div
+                  className="gesture-hint"
+                  onClick={() => dismissGestureHint(true)}
+                  onTouchStart={(e) => { e.stopPropagation() }}
+                  onTouchEnd={(e) => { e.stopPropagation(); dismissGestureHint(true) }}
+                >
+                  <div className="gesture-hint-text">Pinch with two fingers to zoom and rotate. Drag with one finger to move.</div>
+                  <button
+                    className="gesture-hint-dismiss"
+                    onClick={(e) => { e.stopPropagation(); dismissGestureHint(true) }}
+                  >
+                    Got it
+                  </button>
                 </div>
               )}
               
