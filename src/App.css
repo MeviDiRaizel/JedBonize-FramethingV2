@@ -940,6 +940,19 @@ button, .profile-image, .frame-image {
   pointer-events: auto;
 }
 
+.mobile-download-bar .back-btn,
+.mobile-download-bar .download-btn.mobile {
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  margin: 0 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 @media (max-width: 768px) {
   .app[data-has-image="true"] .mobile-download-bar {
     display: flex;

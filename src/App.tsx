@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
-import { Upload, Download, RotateCw, ZoomIn, ZoomOut, Moon, Sun, X, Move } from 'lucide-react'
+import { Upload, Download, RotateCw, ZoomIn, ZoomOut, Moon, Sun, X, Move, ArrowLeft } from 'lucide-react'
 import './App.css'
 
 interface ImageState {
@@ -17,6 +17,18 @@ interface DragState {
   startY: number
   startImageX: number
   startImageY: number
+}
+
+// Rotation helpers (top-level for stable references)
+const normalizeDeg = (angle: number) => {
+  const mod = angle % 360
+  return mod < 0 ? mod + 360 : mod
+}
+
+const snapAngleDeg = (angle: number, threshold = 6, step = 90) => {
+  const normalized = normalizeDeg(angle)
+  const nearest = Math.round(normalized / step) * step
+  return Math.abs(normalized - nearest) <= threshold ? normalizeDeg(nearest) : normalized
 }
 
 function App() {
@@ -53,6 +65,8 @@ function App() {
     startImageY: number
   } | null>(null)
   const [showGestureHint, setShowGestureHint] = useState(false)
+
+  // (moved to top-level) Helpers for snapping rotation to nearest 90° within a threshold
 
   const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'frame') => {
     const file = event.target.files?.[0]
@@ -179,6 +193,7 @@ function App() {
       const nextScale = Math.max(0.1, Math.min(3, gestureState.startScale * scaleFactor))
       const rotationDeltaDeg = ((angle - gestureState.startAngle) * 180) / Math.PI
       const nextRotation = gestureState.startRotation + rotationDeltaDeg
+      const snappedRotation = snapAngleDeg(nextRotation)
 
       const deltaCenterX = center.x - gestureState.startCenterX
       const deltaCenterY = center.y - gestureState.startCenterY
@@ -186,7 +201,7 @@ function App() {
       setProfileImage(prev => prev ? {
         ...prev,
         scale: nextScale,
-        rotation: nextRotation,
+        rotation: snappedRotation,
         x: gestureState.startImageX + deltaCenterX,
         y: gestureState.startImageY + deltaCenterY
       } : null)
@@ -225,7 +240,7 @@ function App() {
     if (!profileImage) return
     setProfileImage(prev => prev ? {
       ...prev,
-      rotation: rotation
+      rotation: snapAngleDeg(rotation)
     } : null)
   }, [profileImage])
 
@@ -459,6 +474,12 @@ function App() {
     setFrameImage('/JedBonize-FramethingV2/frames/DP.png')
     if (fileInputRef.current) fileInputRef.current.value = ''
     toast.success('All images cleared!')
+  }, [])
+
+  const handleBackMobile = useCallback(() => {
+    // Only clear the uploaded profile image so user can choose again
+    setProfileImage(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }, [])
 
   // Prevent context menu on canvas
@@ -748,6 +769,12 @@ function App() {
               {/* Mobile download button bar */}
               {profileImage && (
                 <div className="mobile-download-bar">
+                  <button
+                    className="back-btn mobile"
+                    onClick={(e) => { e.stopPropagation(); handleBackMobile() }}
+                  >
+                    <ArrowLeft size={16} /> Back
+                  </button>
                   <button
                     className="download-btn mobile"
                     onClick={(e) => { e.stopPropagation(); handleDownload() }}
