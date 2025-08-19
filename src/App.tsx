@@ -620,9 +620,6 @@ function App() {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
               onContextMenu={handleContextMenu}
             >
               {/* Profile Image - Behind the frame */}
@@ -638,6 +635,9 @@ function App() {
                       cursor: dragState.isDragging ? 'grabbing' : 'grab',
                       touchAction: 'none'
                     }}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                     draggable={false}
                   />
                 </div>
@@ -742,6 +742,19 @@ function App() {
                 <div className="drag-indicator">
                   <Move size={20} />
                   <span>Drag to move</span>
+                </div>
+              )}
+
+              {/* Mobile download button bar */}
+              {profileImage && (
+                <div className="mobile-download-bar">
+                  <button
+                    className="download-btn mobile"
+                    onClick={(e) => { e.stopPropagation(); handleDownload() }}
+                    disabled={!profileImage || !frameImage}
+                  >
+                    <Download size={16} /> Download
+                  </button>
                 </div>
               )}
               {profileImage && showGestureHint && (

@@ -357,7 +357,8 @@ body {
   align-items: center;
   justify-content: center;
   user-select: none;
-  touch-action: none;
+  /* allow page scroll by default on touch; we'll disable on the image only */
+  touch-action: auto;
   overflow: visible;
 }
 
@@ -875,7 +876,7 @@ button, .profile-image, .frame-image {
 /* Mobile-specific touch improvements */
 @media (max-width: 768px) {
   .canvas-area {
-    touch-action: none;
+    touch-action: auto;
   }
   
   .profile-image {
@@ -909,7 +910,7 @@ button, .profile-image, .frame-image {
     min-height: calc(100vh - 0px);
   }
   .app[data-has-image="true"] .canvas-area {
-    min-height: calc(100vh - 0px);
+    min-height: calc(100vh - 56px);
   }
   .app[data-has-image="true"] .frame-image,
   .app[data-has-image="true"] .profile-image {
@@ -919,5 +920,28 @@ button, .profile-image, .frame-image {
   /* Hide floating controls on mobile to favor gestures */
   .app[data-has-image="true"] .left-rail {
     display: none;
+  }
+}
+
+/* Mobile download bar */
+.mobile-download-bar {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  width: 100%;
+  display: none;
+  justify-content: center;
+  pointer-events: none; /* allow clicks to the button only */
+}
+
+.mobile-download-bar .mobile {
+  pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .app[data-has-image="true"] .mobile-download-bar {
+    display: flex;
   }
 }
